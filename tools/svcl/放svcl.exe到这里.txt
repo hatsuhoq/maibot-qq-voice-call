@@ -1,0 +1,2 @@
+把 NirSoft SoundVolumeCommandLine 的 svcl.exe 放在这里。
+下载：https://www.nirsoft.net/utils/svcl-x64.zip

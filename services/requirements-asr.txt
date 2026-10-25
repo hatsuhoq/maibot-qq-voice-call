@@ -1,0 +1,5 @@
+# 对应 pyproject.toml 的 asr extra；优先使用 uv sync --extra asr。
+faster-whisper>=1.1.1,<2
+fastapi>=0.116
+uvicorn>=0.35
+python-multipart>=0.0.20

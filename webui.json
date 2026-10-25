@@ -1,0 +1,27 @@
+{
+  "schema_version": 2,
+  "required_capabilities": ["custom_pages"],
+  "workspace_title": "QQ 语音通话",
+  "pages": [{
+    "id": "call",
+    "title": "QQ 语音通话",
+    "description": "手动接听后启动音频桥接",
+    "placement": "sidebar",
+    "icon": "puzzle",
+    "mode": "custom",
+    "entry": "web/call.html",
+    "layout": "document",
+    "queries": {
+      "status": {"api": "voice_status"},
+      "devices": {"api": "voice_devices"}
+    },
+    "actions": {
+      "listen": {"api": "voice_listen"},
+      "start": {"api": "voice_start", "parameters": {
+        "qq_user_id": {"type": "string", "required": true, "max_length": 20},
+        "confirmed_connected": {"type": "boolean", "required": true}
+      }},
+      "stop": {"api": "voice_stop"}
+    }
+  }]
+}

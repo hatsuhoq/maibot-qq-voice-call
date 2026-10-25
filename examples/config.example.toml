@@ -1,0 +1,45 @@
+# 示例模板；实际 config.toml 由 MaiBot Runner 生成，请在插件配置页填写。
+[plugin]
+enabled = false
+config_version = "0.2.0"
+allowed_qq_ids = []
+
+[audio]
+input_device = -1
+output_device = -1
+vad_mode = 2
+start_ms = 100
+end_ms = 600
+early_asr_ms = 300
+max_utterance_seconds = 20
+idle_seconds = 120
+max_call_minutes = 30
+
+[speech]
+asr_url = "http://127.0.0.1:8091"
+asr_model = "paraformer-zh"
+tts_backend = "gpt_sovits"
+tts_url = "http://127.0.0.1:9880"
+tts_sample_rate = 32000
+gpt_sovits_streaming_mode = 1
+gpt_sovits_speed = 1.0
+timeout_seconds = 45
+
+# 每种情绪一段参考音频（3～10 秒，单人无背景音）。只配 neutral 也能用，所有情绪都会用这一段。
+[[speech.voice_styles]]
+emotion = "neutral"
+ref_audio_path = "D:\\voices\\neutral.wav"
+prompt_text = "参考音频里说的原文"
+prompt_lang = "zh"
+
+[chat]
+task_name = "replyer"
+context_messages = 12
+history_turns = 8
+max_reply_chars = 180
+prompt_language = "zh-CN"
+
+[bridge]
+enabled = false
+token_file = ""
+port = 6110

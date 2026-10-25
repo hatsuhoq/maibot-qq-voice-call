@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+/config.toml
+/models/
+/recordings/
+/.reference/
+/bridge/runtime/
+
+/scripts/logs/
+/config_back/
+/data/invite_state.json
+/scripts/paths.local.bat

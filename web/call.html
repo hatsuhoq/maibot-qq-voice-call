@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QQ 语音通话</title>
+<style>
+:root{color-scheme:light dark;font:16px/1.7 system-ui,"Microsoft YaHei",sans-serif}body{max-width:850px;margin:32px auto;padding:0 20px}section{border:1px solid #8886;border-radius:12px;padding:22px;margin:20px 0}h1,h2{margin-top:0}h2{font-size:20px}button,input{font:inherit;padding:8px 12px}button{cursor:pointer;margin:8px 8px 0 0}input[type=text]{width:220px}label{display:block;margin:10px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere}table{border-collapse:collapse;width:100%;font-size:13px}td,th{border-bottom:1px solid #8885;text-align:left;padding:6px}.scroll{overflow-x:auto}#error{color:#d65353}button:disabled{cursor:wait;opacity:.5}:focus-visible{outline:2px solid #488bdd;outline-offset:3px}
+</style>
+</head>
+<body>
+<h1>QQ 语音通话</h1>
+<p>自动模式会识别真实来电者，接通后开始对话，挂断后自动停止音频。</p>
+<section><h2>自动接听</h2><p>完成一次性安装与插件配置后，点击下方按钮，直接拨打小睦的 QQ 电话即可。</p>
+<button id="listen">等待 QQ 来电</button><p id="bridgeState" role="status"></p>
+<p>停止会关闭音频和自动接听；正在进行的 QQ 电话仍需由一方挂断。</p></section>
+<section><h2>手动模式</h2><p>未启用自动接听桥时，可手动接通 QQ 后使用。</p>
+<label for="peer">当前通话对方的 QQ 号</label><input id="peer" type="text" inputmode="numeric" maxlength="20" autocomplete="off">
+<label><input id="confirmed" type="checkbox"> 已接通电话，且实际来电者与上面的 QQ 号一致</label>
+<button id="start">开始语音桥接</button><button id="stop">停止语音桥接</button><button id="refresh">刷新状态</button>
+<p id="error" role="alert"></p><p id="state" role="status">正在连接…</p><pre id="metrics"></pre>
+<p>只能绑定允许列表里的 QQ 私聊。请在插件配置中设置允许列表、本地服务地址和音频设备编号。</p>
+</section>
+<section><h2>音频设备</h2><p>输入应只收到对方的声音；输出应只进入 QQ 麦克风。两条通道不能互相回送。</p>
+<button id="devices">查询设备</button><div class="scroll"><table><thead><tr><th>编号</th><th>设备</th><th>接口</th><th>输入声道</th><th>输出声道</th></tr></thead><tbody id="deviceRows"></tbody></table></div>
+</section>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  let busy = false;
+  async function refresh() {
+    const data = await maibot.query('status');
+    $('bridgeState').textContent = data.bridge.state;
+    if(data.bridge.error) $('error').textContent = data.bridge.error;
+    $('state').textContent = `${data.chat_name ? data.chat_name + ' · ' : ''}${data.state}${data.reason ? '：' + data.reason : ''}`;
+    if(data.error) $('error').textContent = data.error;
+    const m = data.metrics;
+    $('metrics').textContent = `识别：${m.asr_seconds ?? '—'} 秒　回复：${m.llm_seconds ?? '—'} 秒　首段合成：${m.tts_first_chunk_seconds ?? '—'} 秒\n完成回复：${data.completed_turns ?? 0} 次　打断：${data.interruptions ?? 0} 次`;
+  }
+  async function run(work) {
+    if(busy) return;
+    busy = true; $('error').textContent = '';
+    document.querySelectorAll('button').forEach(b => b.disabled = true);
+    try { await work(); await refresh(); }
+    catch(e) { $('error').textContent = e.message; }
+    finally { busy = false; document.querySelectorAll('button').forEach(b => b.disabled = false); }
+  }
+  $('start').onclick = () => run(() => maibot.action('start',{qq_user_id:$('peer').value.trim(),confirmed_connected:$('confirmed').checked}));
+  $('listen').onclick = () => run(() => maibot.action('listen'));
+  $('stop').onclick = () => run(() => maibot.action('stop'));
+  $('refresh').onclick = () => run(async () => {});
+  $('devices').onclick = () => run(async () => {
+    const data = await maibot.query('devices'); $('deviceRows').replaceChildren();
+    for(const device of data.devices) {
+      const row = document.createElement('tr');
+      for(const key of ['id','name','host','input_channels','output_channels']) {
+        const cell = document.createElement('td'); cell.textContent = device[key]; row.append(cell);
+      }
+      $('deviceRows').append(row);
+    }
+  });
+  async function initialize() {
+    if(!window.maibot) { $('state').textContent = '请从 MaiBot 的插件扩展页面打开。'; return; }
+    await maibot.ready; await run(async () => {});
+    // 只轮询状态，不重新启动桥接；隐藏页面时暂停查询。
+    setInterval(() => { if(!document.hidden && !busy) refresh().catch(e => $('error').textContent = e.message); }, 2000);
+  }
+  initialize().catch(e => $('error').textContent = e.message);
+})();
+</script>
+</body></html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>MaiBot QQ Call AVSDK Host</title>
+  </head>
+  <body>
+    <embed id="avsdk" type="application/x-ppapi-avSDK" width="1" height="1" />
+    <script>
+      "use strict";
+
+      const { ipcRenderer } = require("electron");
+      const knownMethods = [
+        "login",
+        "logout",
+        "startCall",
+        "quit",
+        "close",
+        "clearRoom",
+        "invite",
+        "ignore",
+        "reject",
+        "acceptInvite",
+        "startTRAEAudio",
+        "stopTRAEAudio",
+        "openMic",
+        "closeMic",
+        "sendNTDataToAVSdk",
+        "postMessage",
+      ];
+
+      function inspectPlugin() {
+        try {
+          const plugin = document.getElementById("avsdk");
+          const methods = new Set();
+          for (const name in plugin) {
+            try {
+              if (typeof plugin[name] === "function") methods.add(name);
+            } catch {}
+          }
+          for (const name of knownMethods) {
+            try {
+              if (typeof plugin[name] === "function") methods.add(name);
+            } catch {}
+          }
+          ipcRenderer.send("maibot-qq-call-avsdk-state", {
+            ready: typeof plugin.postMessage === "function",
+            pluginFound: typeof plugin.postMessage === "function",
+            methods: [...methods].sort(),
+            error: null,
+          });
+        } catch (error) {
+          ipcRenderer.send("maibot-qq-call-avsdk-state", {
+            ready: true,
+            pluginFound: false,
+            methods: [],
+            error: error?.message ?? String(error),
+          });
+        }
+      }
+
+      window.maibotQQCallAVSDKInvoke = (command, id, params) => {
+        const plugin = document.getElementById("avsdk");
+        if (!plugin || typeof plugin.postMessage !== "function") {
+          throw new Error("AVSDK postMessage is unavailable");
+        }
+        if (!Number.isInteger(command) || !Number.isInteger(id) || !Array.isArray(params)) {
+          throw new Error("invalid AVSDK invocation");
+        }
+        plugin.postMessage({ cmd: command, id, param: params });
+        return { posted: true, command, id };
+      };
+
+      window.addEventListener("load", () => {
+        const plugin = document.getElementById("avsdk");
+        plugin?.addEventListener("message", (event) => {
+          ipcRenderer.send("maibot-qq-call-avsdk-message");
+          if (event.data && typeof event.data === "object") {
+            ipcRenderer.send("maibot-qq-call-avsdk-raw-message", event.data);
+          }
+        });
+        setTimeout(inspectPlugin, 1500);
+      });
+    </script>
+  </body>
+</html>
